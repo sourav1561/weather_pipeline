@@ -22,7 +22,12 @@ for _, location in population_df.iterrows():
         f"?latitude={location['Latitude']}&longitude={location['Longitude']}&current_weather=true"
     )
     try:
-        response = requests.get(api_url, timeout=10)
+        response = None
+        for attempt in range(3):  # retry up to 3 times on server errors
+            response = requests.get(api_url, timeout=10)
+            if response.status_code == 200:
+                break
+            time.sleep(2)
         response.raise_for_status()
         current = response.json()["current_weather"]
         weather_rows.append({
@@ -43,3 +48,43 @@ merged_df = pd.merge(population_df, weather_df, on="City", how="inner")
 
 print("Rows after merge:", len(merged_df))
 print(merged_df.head(10))
+
+# ---------- Task 3.3: Data cleaning and normalization ----------
+clean_df = merged_df.copy()
+
+print("Null values before cleaning:")
+print(clean_df.isnull().sum())
+
+# Convert numeric columns (invalid values become NaN)
+clean_df["Population"] = pd.to_numeric(clean_df["Population"], errors="coerce")
+clean_df["Temperature"] = pd.to_numeric(clean_df["Temperature"], errors="coerce")
+clean_df["Windspeed"] = pd.to_numeric(clean_df["Windspeed"], errors="coerce")
+
+# Remove rows that are missing essential values
+clean_df = clean_df.dropna(subset=["Country", "City", "Population", "Temperature"])
+
+# Missing text values get the word "null"
+for col in clean_df.columns:
+    if not pd.api.types.is_numeric_dtype(clean_df[col]):
+        clean_df[col] = clean_df[col].fillna("null")
+
+# Enforce explicit data types
+clean_df["Population"] = clean_df["Population"].astype("int64")
+clean_df["Temperature"] = clean_df["Temperature"].astype("float64")
+clean_df["Windspeed"] = clean_df["Windspeed"].astype("float64")
+
+# Derived columns: Fahrenheit and a Cold/Mild/Hot category
+clean_df["Temperature_F"] = (clean_df["Temperature"] * 9 / 5 + 32).round(1)
+clean_df["Temperature_Category"] = pd.cut(
+    clean_df["Temperature"],
+    bins=[-100, 10, 25, 100],
+    labels=["Cold", "Mild", "Hot"],
+    right=False,
+).astype(str)
+
+print("Null values after cleaning:")
+print(clean_df.isnull().sum())
+print(clean_df.dtypes)
+print(clean_df[["City", "Country", "Population", "Temperature", "Temperature_F", "Temperature_Category"]].head(10))
+print(clean_df["Temperature_Category"].value_counts())
+print("Final row count:", len(clean_df))
