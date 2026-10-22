@@ -1,0 +1,11 @@
+# Ignore local data directory
+data/
+# Ignore local virtual environment
+venv/
+# Ignore Python cache folders
+__pycache__/
+# Ignore environment secret files
+.env
+# Ignore GCP key (never upload this)
+gcp-key.json
+scripts/gcp-key.json
