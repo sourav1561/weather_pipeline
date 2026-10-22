@@ -36,3 +36,10 @@ for _, location in population_df.iterrows():
 
 print(f"Fetched weather for {len(weather_rows)} cities")
 print(weather_rows[:5])
+
+# ---------- Task 3.2: Convert API results to a DataFrame and merge ----------
+weather_df = pd.DataFrame(weather_rows)
+merged_df = pd.merge(population_df, weather_df, on="City", how="inner")
+
+print("Rows after merge:", len(merged_df))
+print(merged_df.head(10))
