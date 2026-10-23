@@ -88,3 +88,20 @@ print(clean_df.dtypes)
 print(clean_df[["City", "Country", "Population", "Temperature", "Temperature_F", "Temperature_Category"]].head(10))
 print(clean_df["Temperature_Category"].value_counts())
 print("Final row count:", len(clean_df))
+
+# ---------- Task 4.3: Load into BigQuery ----------
+from google.cloud import bigquery
+from google.oauth2 import service_account
+
+PROJECT_ID = "tensile-sorter-512407-e9"
+KEY_PATH = os.path.join(BASE_DIR, "gcp-key.json")
+TABLE_ID = f"{PROJECT_ID}.global_weather_data.current_weather_stats"
+
+credentials = service_account.Credentials.from_service_account_file(KEY_PATH)
+client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
+
+# WRITE_TRUNCATE replaces the table each run, so rows never duplicate
+job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
+load_job = client.load_table_from_dataframe(clean_df, TABLE_ID, job_config=job_config)
+load_job.result()  # wait for the load to finish
+print(f"Loaded {load_job.output_rows} rows into {TABLE_ID}")
