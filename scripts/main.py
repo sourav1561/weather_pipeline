@@ -8,6 +8,7 @@ POP_PATH = os.path.join(BASE_DIR, "..", "data", "population.csv")
 
 # Load the population CSV
 population_df = pd.read_csv(POP_PATH)
+population_df = population_df.head(50)
 
 # Fix a sign error in the source file: Mexico City is in the northern hemisphere
 population_df.loc[population_df["City"] == "Mexico City", "Latitude"] = 19.4326
